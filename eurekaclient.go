@@ -25,7 +25,6 @@ package hzleureka
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -34,13 +33,19 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/twinj/uuid"
 )
 
 var instanceId string
-var discoveryServerUrl = "http://192.168.1.25:9000"
+var discoveryServerUrl = "http://127.0.0.1:9000"
 var ports = ""
 var securePorts = ""
+
+// var log &Logger{}
+
+var logger = logrus.New()
 
 var regTpl = `{
   "instance": {
@@ -73,7 +78,8 @@ var regTpl = `{
 /**
  * Registers this application at the Eureka server at @eurekaUrl as @appName running on port(s) @port and/or @securePort.
  */
-func RegisterAt(eurekaUrl string, appName string, port string, securePort string) {
+func RegisterAt(eurekaUrl string, appName string, port string, securePort string, log *logrus.Logger) {
+	logger = log
 	discoveryServerUrl = eurekaUrl
 	ports = port
 	securePorts = securePort
@@ -95,7 +101,7 @@ func Register(appName string, port string, securePort string, init bool) {
 	tpl = strings.Replace(tpl, "${securePort}", securePort, -1)
 	tpl = strings.Replace(tpl, "${instanceId}", instanceId, -1)
 	tpl = strings.Replace(tpl, "${appName}", appName, -1)
-	//fmt.Println(tpl)
+	logger.Debug(tpl)
 	// Register.
 	registerAction := HttpAction{
 		Url:         discoveryServerUrl + "/eureka/apps/" + appName,
@@ -107,14 +113,14 @@ func Register(appName string, port string, securePort string, init bool) {
 	for {
 		result = doHttpRequest(registerAction)
 		if result {
-			fmt.Println("Registration OK")
+			logger.Info("Registration OK")
 			handleSigterm(appName)
 			if init {
 				go StartHeartbeat(appName)
 			}
 			break
 		} else {
-			fmt.Println("Registration attempt of " + appName + " failed...")
+			logger.Info("Registration attempt of " + appName + " failed...")
 			time.Sleep(time.Second * 5)
 		}
 	}
@@ -127,22 +133,22 @@ func Register(appName string, port string, securePort string, init bool) {
  */
 func GetServiceInstances(appName string) ([]EurekaInstance, error) {
 	var m EurekaServiceResponse
-	fmt.Println("Querying eureka for instances of " + appName + " at: " + discoveryServerUrl + "/eureka/apps/" + appName)
+	logger.Info("Querying eureka for instances of " + appName + " at: " + discoveryServerUrl + "/eureka/apps/" + appName)
 	queryAction := HttpAction{
 		Url:         discoveryServerUrl + "/eureka/apps/" + appName,
 		Method:      "GET",
 		Accept:      "application/json;charset=UTF-8",
 		ContentType: "application/json;charset=UTF-8",
 	}
-	log.Println("Doing queryAction using URL: " + queryAction.Url)
+	logger.Info("Doing queryAction using URL: " + queryAction.Url)
 	bytes, err := executeQuery(queryAction)
 	if err != nil {
 		return nil, err
 	} else {
-		fmt.Println("Got instances response from Eureka:\n" + string(bytes))
+		logger.Info("Got instances response from Eureka:\n" + string(bytes))
 		err := json.Unmarshal(bytes, &m)
 		if err != nil {
-			fmt.Println("Problem parsing JSON response from Eureka: " + err.Error())
+			logger.Error("Problem parsing JSON response from Eureka: " + err.Error())
 			return nil, err
 		}
 		return m.Application.Instance, nil
@@ -152,7 +158,7 @@ func GetServiceInstances(appName string) ([]EurekaInstance, error) {
 // Experimental, untested.
 func GetServices() ([]EurekaApplication, error) {
 	var m EurekaApplicationsRootResponse
-	fmt.Println("Querying eureka for services at: " + discoveryServerUrl + "/eureka/apps")
+	logger.Info("Querying eureka for services at: " + discoveryServerUrl + "/eureka/apps")
 	queryAction := HttpAction{
 		Url:         discoveryServerUrl + "/eureka/apps",
 		Method:      "GET",
@@ -164,10 +170,10 @@ func GetServices() ([]EurekaApplication, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		fmt.Println("Got services response from Eureka:\n" + string(bytes))
+		logger.Info("Got services response from Eureka:\n" + string(bytes))
 		err := json.Unmarshal(bytes, &m)
 		if err != nil {
-			fmt.Println("Problem parsing JSON response from Eureka: " + err.Error())
+			logger.Info("Problem parsing JSON response from Eureka: " + err.Error())
 			return nil, err
 		}
 		return m.Resp.Applications, nil
@@ -178,7 +184,7 @@ func GetServices() ([]EurekaApplication, error) {
 func StartHeartbeat(appName string) {
 	for {
 		time.Sleep(time.Second * 30)
-		fmt.Println("我在运行")
+		logger.Info("我在运行")
 		heartbeat(appName)
 	}
 }
@@ -189,7 +195,7 @@ func heartbeat(appName string) {
 		Method:      "PUT",
 		ContentType: "application/json;charset=UTF-8",
 	}
-	fmt.Println("Issuing heartbeat to " + heartbeatAction.Url)
+	logger.Info("Issuing heartbeat to " + heartbeatAction.Url)
 	bool := doHttpRequest(heartbeatAction)
 	if !bool {
 		Register(appName, ports, securePorts, false)
@@ -197,7 +203,7 @@ func heartbeat(appName string) {
 }
 
 func deregister(appName string) {
-	fmt.Println("Trying to deregister application " + appName + "...")
+	logger.Info("Trying to deregister application " + appName + "...")
 	// Deregister
 	deregisterAction := HttpAction{
 		Url:         discoveryServerUrl + "/eureka/apps/" + appName + "/" + getLocalIP(),
@@ -205,7 +211,7 @@ func deregister(appName string) {
 		Method:      "DELETE",
 	}
 	doHttpRequest(deregisterAction)
-	fmt.Println("Deregistered application " + appName + ", exiting. Check Eureka...")
+	logger.Info("Deregistered application " + appName + ", exiting. Check Eureka...")
 }
 
 func getLocalIP() string {
