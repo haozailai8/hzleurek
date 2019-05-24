@@ -21,12 +21,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package eeureka
+package hzleureka
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/twinj/uuid"
 	"log"
 	"net"
 	"os"
@@ -34,11 +33,13 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/twinj/uuid"
 )
 
 var instanceId string
 var discoveryServerUrl = "http://192.168.1.25:9000"
-var ports  = ""
+var ports = ""
 var securePorts = ""
 
 var regTpl = `{

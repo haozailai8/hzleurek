@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package eeureka
+package hzleureka
 
 /**
   Defines a graph of structs that conforms to a part of the return type of the Eureka "get instances for appId", e.g:
