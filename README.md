@@ -3,6 +3,9 @@ go 语言 链接 spring-cloud 注册中心
 
 
 ## Usage
+go
+
+    go get github.com/haozailai8/hzleurek.git
 
 Import
 
