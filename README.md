@@ -6,7 +6,7 @@ go 语言 链接 spring-cloud 注册中心
 
 Import
 
-    import "github.com/haozailai8/scloud-register"
+    import "github.com/haozailai8/hzleurek.git"
     
 In your code, call the Register method:
 
