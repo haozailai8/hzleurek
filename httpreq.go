@@ -26,7 +26,6 @@ package hzleureka
 import (
 	"crypto/tls"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -61,10 +60,10 @@ func doHttpRequest(httpAction HttpAction) bool {
 	resp, err := DefaultTransport.RoundTrip(req)
 	if resp != nil && resp.StatusCode > 299 {
 		defer resp.Body.Close()
-		log.Printf("HTTP request failed with status: %d", resp.StatusCode)
+		Clogger.Infof("HTTP request failed with status: %d", resp.StatusCode)
 		return false
 	} else if err != nil {
-		log.Printf("HTTP request failed: %s", err.Error())
+		Clogger.Info("HTTP request failed: %s", err.Error())
 		return false
 	} else {
 		return true
@@ -86,7 +85,7 @@ func buildHttpRequest(httpAction HttpAction) *http.Request {
 		req, err = http.NewRequest(httpAction.Method, httpAction.Url, nil)
 	}
 	if err != nil {
-		log.Fatal(err)
+		Clogger.Fatal(err)
 	}
 
 	// Add headers
